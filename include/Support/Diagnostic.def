@@ -1,0 +1,15 @@
+//===--- Diagnostic.def - Modula-2 Diagnostic Messages ----------*- C++ -*-===//
+//
+// Part of the M2Lang Project, under the Apache License v2.0 with
+// LLVM Exceptions. See LICENSE file for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef DIAG
+#define DIAG(ID, Level, Msg)
+#endif
+
+DIAG(invalid_suffix_in_constant, Error, "invalid suffix {0} in constant")
+DIAG(unknown_identifier, Error, "unknown identifier '{0}'")
+#undef DIAG
