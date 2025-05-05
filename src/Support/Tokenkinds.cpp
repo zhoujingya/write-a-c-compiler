@@ -40,7 +40,7 @@ static const char * const KeywordNames[] = {
 };
 
 const char *tok::getKeywordSpelling(TokenKind Kind) {
-  if (Kind >= tok::kw_int && Kind <= tok::kw_else)
-    return KeywordNames[Kind - tok::kw_int];
+  if (Kind > tok::kw_start && Kind < tok::kw_end)
+    return KeywordNames[Kind - tok::kw_start];
   return nullptr;
 }

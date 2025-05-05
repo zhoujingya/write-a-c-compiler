@@ -627,7 +627,7 @@ bool Parser::checkKeywordCaseError() {
   StringRef Id = CurTok.getIdentifier();
 
   // Check all keywords by iterating through them
-  for (tok::TokenKind K = tok::kw_int; K <= tok::kw_else;
+  for (tok::TokenKind K = tok::kw_start; K <= tok::kw_end;
        K = static_cast<tok::TokenKind>(K + 1)) {
     const char *KwSpelling = tok::getKeywordSpelling(K);
     if (KwSpelling && Id.equals_insensitive(KwSpelling) &&

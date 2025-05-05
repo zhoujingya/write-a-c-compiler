@@ -27,11 +27,13 @@ PUNCTUATOR(minus,               "-")
 PUNCTUATOR(star,                "*")
 PUNCTUATOR(equal,               "=")
 
+KEYWORD(start                       , KEYALL)
 KEYWORD(int                         , KEYALL)
 KEYWORD(void                        , KEYALL)
 KEYWORD(return                      , KEYALL)
 KEYWORD(if                          , KEYALL)
 KEYWORD(else                        , KEYALL)
+KEYWORD(end                         , KEYALL)
 
 #undef KEYWORD
 #undef PUNCTUATOR
