@@ -104,24 +104,59 @@ void Lexer::identifier(Token &Result) {
   formToken(Result, End, Keywords.getKeyword(Name, tok::identifier));
 }
 
-// TODO: not correct, should handle the case where the number is too large
+// Improved number tokenization function to handle decimal, hexadecimal, and
+// octal numbers
 void Lexer::number(Token &Result) {
-  const char *End = CurPtr + 1;
-  tok::TokenKind Kind = tok::unknown;
-  bool HasInvalidSuffix = false;
-  const char *InvalidSuffix = nullptr;
-  while (*End && !charinfo::isWhitespace(*End) && *End != ';') {
-    if (!charinfo::isDigit(*End)) {
-      HasInvalidSuffix = true;
-      InvalidSuffix = End;
+  const char *Start = CurPtr;
+  const char *End = CurPtr;
+  bool IsHex = false;
+  bool IsOctal = false;
+
+  // Check for hex (0x) or octal (0) prefix
+  if (*End == '0') {
+    ++End;
+    if (*End == 'x' || *End == 'X') {
+      IsHex = true;
+      ++End;
+      // At least one hex digit required after 0x
+      if (!charinfo::isHexDigit(*End)) {
+        Diags.report(getLoc(End), diag::invalid_suffix_in_constant, *End);
+        formToken(Result, End, tok::constant);
+        return;
+      }
+    } else if (charinfo::isDigit(*End)) {
+      IsOctal = true;
+    }
+  }
+
+  // Consume all valid digits based on the number type
+  while (true) {
+    if (IsHex && charinfo::isHexDigit(*End)) {
+      ++End;
+    } else if ((IsOctal && *End >= '0' && *End <= '7') ||
+               (!IsHex && !IsOctal && charinfo::isDigit(*End))) {
+      ++End;
+    } else {
       break;
     }
-    ++End;
   }
-  if (HasInvalidSuffix)
+
+  // Check for invalid suffixes or characters
+  if (*End && !charinfo::isWhitespace(*End) && *End != ';' && *End != ',' &&
+      *End != ')' && *End != ']' && *End != '}') {
+    const char *InvalidSuffix = End;
     Diags.report(getLoc(InvalidSuffix), diag::invalid_suffix_in_constant,
                  *InvalidSuffix);
-  formToken(Result, End, Kind);
+
+    // Skip the invalid suffix
+    while (*End && !charinfo::isWhitespace(*End) && *End != ';' &&
+           *End != ',' && *End != ')' && *End != ']' && *End != '}') {
+      ++End;
+    }
+  }
+
+  // Form the token
+  formToken(Result, End, tok::constant);
 }
 
 void Lexer::string(Token &Result) {
@@ -142,6 +177,13 @@ void Lexer::formToken(Token &Result, const char *TokEnd, tok::TokenKind Kind) {
   Result.Ptr = CurPtr;
   Result.Length = TokLen;
   Result.Kind = Kind;
+
+  // For debugging purposes, you can uncomment this to print token information
+  // if (Kind == tok::constant) {
+  //   llvm::StringRef TokenStr(CurPtr, TokLen);
+  //   llvm::errs() << "Formed constant token: '" << TokenStr << "'\n";
+  // }
+
   CurPtr = TokEnd;
 }
 

@@ -51,6 +51,11 @@ public:
            "Cannot get literal data of non-literal");
     return StringRef(Ptr, Length);
   }
+
+  StringRef getConstantValue() const {
+    assert(is(tok::constant) && "Cannot get value of non-constant token");
+    return StringRef(Ptr, Length);
+  }
 };
 
 } // namespace tinycc
