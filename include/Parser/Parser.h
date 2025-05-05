@@ -44,6 +44,9 @@ private:
   std::unique_ptr<Expr> parsePrimaryExpr();
   std::unique_ptr<CallExpr> parseCallExpr(StringRef FuncName, SMLoc Loc);
 
+  // Helper for detecting keyword case errors
+  bool checkKeywordCaseError();
+
 public:
   Parser(Lexer &Lex, DiagnosticsEngine &Diags) : Lex(Lex), Diags(Diags) {
     advance(); // Prime the first token

@@ -109,21 +109,6 @@ void Lexer::identifier(Token &Result) {
 
   // Check for keywords
   tok::TokenKind Kind = Keywords.getKeyword(Name, tok::identifier);
-
-  // If it's an identifier that looks like a keyword in wrong case
-  if (Kind == tok::identifier) {
-    if (Name.equals_insensitive("return"))
-      Diags.report(getLoc(), diag::err_wrong_keyword_case, Name, "return");
-    else if (Name.equals_insensitive("int"))
-      Diags.report(getLoc(), diag::err_wrong_keyword_case, Name, "int");
-    else if (Name.equals_insensitive("void"))
-      Diags.report(getLoc(), diag::err_wrong_keyword_case, Name, "void");
-    else if (Name.equals_insensitive("if"))
-      Diags.report(getLoc(), diag::err_wrong_keyword_case, Name, "if");
-    else if (Name.equals_insensitive("else"))
-      Diags.report(getLoc(), diag::err_wrong_keyword_case, Name, "else");
-  }
-
   formToken(Result, End, Kind);
 }
 

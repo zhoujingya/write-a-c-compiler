@@ -1,6 +1,7 @@
 #include "Parser/Parser.h"
 #include "AST/AST.h"
 #include <llvm/ADT/APInt.h>
+#include <llvm/ADT/StringExtras.h>
 #include <memory>
 
 using namespace tinycc;
@@ -122,6 +123,11 @@ std::vector<std::unique_ptr<Decl>> Parser::parse() {
 
 // Parse top-level declarations
 std::unique_ptr<Decl> Parser::parseTopLevelDecl() {
+  // Check for type keywords with wrong case
+  if (checkKeywordCaseError()) {
+    return parseTopLevelDecl();
+  }
+
   // For now, we only handle function declarations
   // TODO: handle global variables
   if (CurTok.is(tok::kw_int) || CurTok.is(tok::kw_void)) {
@@ -352,6 +358,11 @@ std::unique_ptr<CompoundStmt> Parser::parseCompoundStmt() {
 
 // Parse any statement
 std::unique_ptr<Stmt> Parser::parseStmt() {
+  // Check for keywords with wrong case
+  if (checkKeywordCaseError()) {
+    return parseStmt();
+  }
+
   if (CurTok.is(tok::kw_return)) {
     return parseReturnStmt();
   } else if (CurTok.is(tok::kw_if)) {
@@ -605,4 +616,28 @@ std::unique_ptr<CallExpr> Parser::parseCallExpr(StringRef FuncName, SMLoc Loc) {
   advance(); // consume ')'
 
   return std::make_unique<CallExpr>(Loc, FuncName, std::move(Args));
+}
+
+// Helper method to check for keyword case errors (e.g., "RETURN" instead of
+// "return")
+bool Parser::checkKeywordCaseError() {
+  if (!CurTok.is(tok::identifier))
+    return false;
+
+  StringRef Id = CurTok.getIdentifier();
+
+  // Check all keywords by iterating through them
+  for (tok::TokenKind K = tok::kw_int; K <= tok::kw_else;
+       K = static_cast<tok::TokenKind>(K + 1)) {
+    const char *KwSpelling = tok::getKeywordSpelling(K);
+    if (KwSpelling && Id.equals_insensitive(KwSpelling) &&
+        Id.str() != KwSpelling) {
+      Diags.report(CurTok.getLocation(), diag::err_wrong_keyword_case, Id,
+                   KwSpelling);
+      advance(); // Skip this token
+      return true;
+    }
+  }
+
+  return false;
 }
