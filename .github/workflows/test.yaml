@@ -1,0 +1,42 @@
+name: tinycc test
+env:
+  VERSION: 19
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 23 * * *' # Runs at 2am everyday
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout tinycc
+      uses: actions/checkout@v4
+      with:
+        path: write-a-c-compiler
+
+    - name: Checkout test repository
+      uses: actions/checkout@v4
+      with:
+        repository: nlsandler/writing-a-c-compiler-tests
+        path: writing-a-c-compiler-tests
+
+    - name: Install llvm
+      run: |
+        brew install llvm@$VERSION
+    - name: Start building
+      run: |
+        export PATH=/opt/homebrew/opt/llvm@$VERSION/bin:$PATH
+        cd ${{github.workspace}}/write-a-c-compiler
+        ls
+        cmake -B build -S .
+        cmake --build build
+
+    - name: Start test lexer
+      run: |
+        arch -x86_64 zsh
+        cd ${{github.workspace}}/writing-a-c-compiler-tests
+        ./test_compiler ${{github.workspace}}/write-a-c-compiler/build/bin/tinycc --chapter 1 --stage lex
