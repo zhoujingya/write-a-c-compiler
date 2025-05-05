@@ -4,5 +4,6 @@ add_library(tinyccLexer
 )
 
 target_link_libraries(tinyccLexer
-    PRIVATE tinyccSupport)
+    PRIVATE tinyccSupport
+    PRIVATE LLVMSupport)
 

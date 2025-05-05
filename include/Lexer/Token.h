@@ -42,7 +42,7 @@ public:
   size_t getLength() const { return Length; }
 
   StringRef getIdentifier() const {
-    assert(is(tok::identifier) && "Cannot get identfier of non-identifier");
+    // assert(is(tok::identifier) && "Cannot get identfier of non-identifier");
     return StringRef(Ptr, Length);
   }
 

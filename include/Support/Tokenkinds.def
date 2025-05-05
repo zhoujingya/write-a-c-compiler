@@ -21,10 +21,17 @@ PUNCTUATOR(open_brace,          "{")
 PUNCTUATOR(close_brace,         "}")
 PUNCTUATOR(semi,                ";")
 PUNCTUATOR(slash,                "/")
+PUNCTUATOR(comma,               ",")
+PUNCTUATOR(plus,                "+")
+PUNCTUATOR(minus,               "-")
+PUNCTUATOR(star,                "*")
+PUNCTUATOR(equal,               "=")
 
 KEYWORD(int                         , KEYALL)
 KEYWORD(void                        , KEYALL)
 KEYWORD(return                      , KEYALL)
+KEYWORD(if                          , KEYALL)
+KEYWORD(else                        , KEYALL)
 
 #undef KEYWORD
 #undef PUNCTUATOR

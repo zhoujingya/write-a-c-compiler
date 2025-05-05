@@ -1,23 +1,27 @@
-#ifndef TINYCC_BASIC_TOKENKINDS_H
-#define TINYCC_BASIC_TOKENKINDS_H
+#ifndef TINYCC_SUPPORT_TOKENKINDS_H
+#define TINYCC_SUPPORT_TOKENKINDS_H
 
-#include "llvm/Support/Compiler.h"
+#include <llvm/ADT/StringRef.h>
 
 namespace tinycc {
 
 namespace tok {
-enum TokenKind : unsigned short {
+enum TokenKind {
 #define TOK(ID) ID,
-#include "TokenKinds.def"
+#include "Support/TokenKinds.def"
   NUM_TOKENS
 };
 
-const char *getTokenName(TokenKind Kind) LLVM_READNONE;
+/// Return the name of a token kind, like "identifier".
+const char *getTokenName(TokenKind Kind);
 
-const char *getPunctuatorSpelling(TokenKind Kind) LLVM_READNONE;
+/// Return the punctuator name like "(".
+const char *getPunctuatorSpelling(TokenKind Kind);
 
-const char *getKeywordSpelling(TokenKind Kind) LLVM_READNONE;
+/// Return the keyword spelling like "int".
+const char *getKeywordSpelling(TokenKind Kind);
 } // namespace tok
+
 } // namespace tinycc
 
-#endif
+#endif // TINYCC_SUPPORT_TOKENKINDS_H

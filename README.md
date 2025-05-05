@@ -38,3 +38,15 @@ Ran 24 tests in 0.131s
 
 OK
   ```
+
+## Chapter2 - parser
+
+`./test_compiler [this repo path]/build/bin/tinycc --chapter 1 --stage parse`
+
+  ```
+➜  writing-a-c-compiler-tests git:(main) ✗ ./test_compiler ~/codes/Tiny-c-compiler/build/bin/tinycc --chapter 1 --stage parse
+----------------------------------------------------------------------
+Ran 24 tests in 0.136s
+
+OK
+  ```

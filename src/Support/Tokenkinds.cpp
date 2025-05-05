@@ -1,11 +1,12 @@
 #include "Support/TokenKinds.h"
-#include "llvm/Support/ErrorHandling.h"
+#include <cassert>
 
 using namespace tinycc;
 
 static const char * const TokNames[] = {
-#define TOK(ID) #ID,
-#define KEYWORD(ID, FLAG) #ID,
+#define TOK(Id) #Id,
+#define KEYWORD(Id, Flag) #Id,
+#define PUNCTUATOR(Id, Spelling) #Id,
 #include "Support/TokenKinds.def"
   nullptr
 };
@@ -13,26 +14,33 @@ static const char * const TokNames[] = {
 const char *tok::getTokenName(TokenKind Kind) {
   if (Kind < tok::NUM_TOKENS)
     return TokNames[Kind];
-  llvm_unreachable("unknown TokenKind");
   return nullptr;
 }
+
+static const char * const PunctuatorNames[] = {
+#define PUNCTUATOR(Id, Spelling) Spelling,
+#define TOK(Id)
+#define KEYWORD(Id, Flag)
+#include "Support/TokenKinds.def"
+  nullptr
+};
 
 const char *tok::getPunctuatorSpelling(TokenKind Kind) {
-  switch (Kind) {
-// Define macro PUNCTUATOR
-#define PUNCTUATOR(ID, SP) case ID: return SP;
-#include "Support/TokenKinds.def"
-    default: break;
-  }
+  if (Kind < tok::NUM_TOKENS)
+    return PunctuatorNames[Kind - tok::open_paren];
   return nullptr;
 }
 
-const char *tok::getKeywordSpelling(TokenKind Kind) {
-  switch (Kind) {
-// Define macro KEYWORD
-#define KEYWORD(ID, FLAG) case kw_ ## ID: return #ID;
+static const char * const KeywordNames[] = {
+#define KEYWORD(Id, Flag) #Id,
+#define TOK(Id)
+#define PUNCTUATOR(Id, Spelling)
 #include "Support/TokenKinds.def"
-    default: break;
-  }
+  nullptr
+};
+
+const char *tok::getKeywordSpelling(TokenKind Kind) {
+  if (Kind >= tok::kw_int && Kind <= tok::kw_else)
+    return KeywordNames[Kind - tok::kw_int];
   return nullptr;
 }

@@ -1,4 +1,5 @@
 #include "Lexer/Lexer.h"
+#include <llvm/ADT/StringExtras.h>
 #include <string>
 #include <vector>
 
@@ -85,6 +86,10 @@ void Lexer::next(Token &Result) {
     case '/':
       if (*(CurPtr + 1) == '/' || *(CurPtr + 1) == '*') {
         comment();
+        // After skipping a comment, restart the lexing process
+        return next(Result);
+      } else {
+        formToken(Result, CurPtr + 1, tok::slash);
       }
       break;
     default:
@@ -101,7 +106,25 @@ void Lexer::identifier(Token &Result) {
   while (charinfo::isIdentifierBody(*End))
     ++End;
   StringRef Name(Start, End - Start);
-  formToken(Result, End, Keywords.getKeyword(Name, tok::identifier));
+
+  // Check for keywords
+  tok::TokenKind Kind = Keywords.getKeyword(Name, tok::identifier);
+
+  // If it's an identifier that looks like a keyword in wrong case
+  if (Kind == tok::identifier) {
+    if (Name.equals_insensitive("return"))
+      Diags.report(getLoc(), diag::err_wrong_keyword_case, Name, "return");
+    else if (Name.equals_insensitive("int"))
+      Diags.report(getLoc(), diag::err_wrong_keyword_case, Name, "int");
+    else if (Name.equals_insensitive("void"))
+      Diags.report(getLoc(), diag::err_wrong_keyword_case, Name, "void");
+    else if (Name.equals_insensitive("if"))
+      Diags.report(getLoc(), diag::err_wrong_keyword_case, Name, "if");
+    else if (Name.equals_insensitive("else"))
+      Diags.report(getLoc(), diag::err_wrong_keyword_case, Name, "else");
+  }
+
+  formToken(Result, End, Kind);
 }
 
 // Improved number tokenization function to handle decimal, hexadecimal, and
@@ -195,9 +218,28 @@ Token &Lexer::lookAhead() {
   return LookaheadToken;
 }
 
-// TODO: this is a very very simple comment lexer, it only supports // and /*
-// */ and it does not handle the case where the comment is not terminated
+// 修改comment函数以支持单行和多行注释
 void Lexer::comment() {
-  while (*CurPtr && *CurPtr != '\n')
-    ++CurPtr;
+  assert(*CurPtr == '/' && "Expected comment start with /");
+
+  if (*(CurPtr + 1) == '/') {
+    // Single line comment, skip to end of line
+    CurPtr += 2; // Skip the '//'
+    while (*CurPtr && *CurPtr != '\n')
+      ++CurPtr;
+    if (*CurPtr == '\n')
+      ++CurPtr; // Consume the newline
+  } else if (*(CurPtr + 1) == '*') {
+    // Multi-line comment, skip until */
+    CurPtr += 2; // Skip the '/*'
+    while (*CurPtr && !(*CurPtr == '*' && *(CurPtr + 1) == '/')) {
+      ++CurPtr;
+      if (!*CurPtr) {
+        Diags.report(getLoc(), diag::err_unterminated_block_comment);
+        return;
+      }
+    }
+    if (*CurPtr)
+      CurPtr += 2; // Skip the '*/'
+  }
 }
