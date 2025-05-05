@@ -40,3 +40,9 @@ jobs:
         arch -x86_64 zsh
         cd ${{github.workspace}}/writing-a-c-compiler-tests
         ./test_compiler ${{github.workspace}}/write-a-c-compiler/build/bin/tinycc --chapter 1 --stage lex
+
+    - name: Start test parser
+      run: |
+        arch -x86_64 zsh
+        cd ${{github.workspace}}/writing-a-c-compiler-tests
+        ./test_compiler ${{github.workspace}}/write-a-c-compiler/build/bin/tinycc --chapter 1 --stage parse
