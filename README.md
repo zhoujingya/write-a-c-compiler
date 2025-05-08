@@ -39,7 +39,7 @@ Ran 24 tests in 0.131s
 OK
   ```
 
-## Chapter2 - parser
+## Chapter1 - parser
 
 `./test_compiler [this repo path]/build/bin/tinycc --chapter 1 --stage parse`
 
@@ -50,3 +50,17 @@ Ran 24 tests in 0.136s
 
 OK
   ```
+
+## Chapter1 - codegen
+
+`./test_compiler [this repo path]/build/bin/tinycc --chapter 1 --stage codegen`
+
+> NOTE: not the same as book, just add an --codegen commandline option
+
+```
+➜  writing-a-c-compiler-tests git:(main) ✗ ./test_compiler ~/codes/Tiny-c-compiler/build/bin/tinycc --chapter 1 --stage codegen
+----------------------------------------------------------------------
+Ran 24 tests in 0.176s
+
+OK
+```
