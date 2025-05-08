@@ -82,6 +82,13 @@ void Lexer::next(Token &Result) {
       CASE(')', tok::close_paren);
       CASE('(', tok::open_paren);
       CASE(';', tok::semi);
+      CASE(',', tok::comma);
+      CASE('+', tok::plus);
+      CASE('-', tok::minus);
+      CASE('*', tok::star);
+      CASE('=', tok::equal);
+      CASE('<', tok::less);
+      CASE('>', tok::greater);
 #undef CASE
     case '/':
       if (*(CurPtr + 1) == '/' || *(CurPtr + 1) == '*') {

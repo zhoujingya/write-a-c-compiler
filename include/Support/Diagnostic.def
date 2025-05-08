@@ -16,4 +16,7 @@ DIAG(err_expected, Error, "expected {0}, found {1}")
 DIAG(err_invalid_function_name, Error, "invalid function name: '{0}' (function names must be identifiers)")
 DIAG(err_unterminated_block_comment, Error, "unterminated /* comment")
 DIAG(err_wrong_keyword_case, Error, "keyword '{0}' is in wrong case; did you mean '{1}'?")
+DIAG(unknown_type, Error, "unknown type '{0}', using 'int' as fallback")
+DIAG(invalid_function, Error, "function '{0}' verification failed")
+DIAG(err_argument_count_mismatch, Error, "function '{0}' takes {1} arguments but {2} were provided")
 #undef DIAG

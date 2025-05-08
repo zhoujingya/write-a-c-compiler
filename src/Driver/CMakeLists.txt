@@ -3,4 +3,4 @@ add_executable(tinycc
 )
 
 target_link_libraries(tinycc
-    PRIVATE tinyccLexer tinyccParser LLVMSupport LLVMCore)
+    PRIVATE tinyccLexer tinyccParser tinyccCodeGen LLVMSupport LLVMCore)

@@ -128,28 +128,23 @@ std::unique_ptr<Decl> Parser::parseTopLevelDecl() {
     return parseTopLevelDecl();
   }
 
-  // For now, we only handle function declarations
-  // TODO: handle global variables
+  // For now, we only handle function declarations and global variables
   if (CurTok.is(tok::kw_int) || CurTok.is(tok::kw_void)) {
     StringRef Type = CurTok.getIdentifier();
     SMLoc TypeLoc = CurTok.getLocation();
     advance();
 
-    // After a type specifier, we expect an identifier (variable or function
-    // name)
+    // After a type specifier, we expect an identifier (variable or function name)
     if (!CurTok.is(tok::identifier)) {
-      // If we see a constant, it's likely a malformed function declaration with
-      // a numeric name
+      // If we see a constant, it's likely a malformed function declaration with a numeric name
       if (CurTok.is(tok::constant)) {
         StringRef ConstValue = CurTok.getConstantValue();
-        Diags.report(CurTok.getLocation(), diag::err_invalid_function_name,
-                     ConstValue);
+        Diags.report(CurTok.getLocation(), diag::err_invalid_function_name, ConstValue);
 
         // Skip the constant token
         advance();
 
-        // Look for an open parenthesis, which suggests it's attempting to be a
-        // function
+        // Look for an open parenthesis, which suggests it's attempting to be a function
         if (CurTok.is(tok::open_paren)) {
           // Skip the entire parameter list
           advance(); // consume '('
@@ -254,18 +249,17 @@ std::unique_ptr<Decl> Parser::parseTopLevelDecl() {
       auto Var = std::make_unique<VarDecl>(NameLoc, Name, Type);
 
       // Check for initialization
-      if (consume(tok::semi)) {
-        return Var;
+      if (CurTok.is(tok::equal)) {
+        advance(); // consume '='
+        auto Init = parseExpr();
+        if (Init)
+          Var->setInit(Init.release());
       }
 
-      Diags.report(CurTok.getLocation(), diag::err_expected, ";",
-                   StringRef(CurTok.getName()));
-      // Try to recover
-      while (!CurTok.is(tok::semi) && !CurTok.is(tok::eof)) {
-        advance();
+      if (!expect(tok::semi)) {
+        return nullptr;
       }
-      if (CurTok.is(tok::semi))
-        advance();
+      advance(); // consume ';'
 
       return Var;
     }
@@ -363,6 +357,40 @@ std::unique_ptr<Stmt> Parser::parseStmt() {
     return parseStmt();
   }
 
+  // Check for variable declarations
+  if (CurTok.is(tok::kw_int) || CurTok.is(tok::kw_void)) {
+    StringRef Type = CurTok.getIdentifier();
+    SMLoc TypeLoc = CurTok.getLocation();
+    advance();
+
+    if (CurTok.is(tok::identifier)) {
+      StringRef Name = CurTok.getIdentifier();
+      SMLoc NameLoc = CurTok.getLocation();
+      advance();
+
+      auto VD = std::make_unique<VarDecl>(NameLoc, Name, Type);
+
+      // Check for initialization
+      if (CurTok.is(tok::equal)) {
+        advance(); // consume '='
+        auto Init = parseExpr();
+        if (Init)
+          VD->setInit(Init.release());
+      }
+
+      if (!expect(tok::semi)) {
+        return nullptr;
+      }
+      advance(); // consume ';'
+
+      // Create a reference to the variable for the expression statement
+      auto VarRef = std::make_unique<VarRefExpr>(NameLoc, Name);
+
+      // Return an expression statement with the variable reference
+      return std::make_unique<ExprStmt>(VarRef.release());
+    }
+  }
+
   if (CurTok.is(tok::kw_return)) {
     return parseReturnStmt();
   } else if (CurTok.is(tok::kw_if)) {
@@ -444,13 +472,15 @@ std::unique_ptr<ExprStmt> Parser::parseExprStmt() {
   return std::make_unique<ExprStmt>(E.release());
 }
 
-// Top-level expression parsing
-std::unique_ptr<Expr> Parser::parseExpr() { return parseAssignExpr(); }
+// Parse expressions
+std::unique_ptr<Expr> Parser::parseExpr() {
+  return parseAssignExpr();
+}
 
 // Parse assignment expressions
 std::unique_ptr<Expr> Parser::parseAssignExpr() {
-  auto E = parseEqualityExpr();
-  if (!E)
+  auto LHS = parseEqualityExpr();
+  if (!LHS)
     return nullptr;
 
   if (CurTok.is(tok::equal)) {
@@ -461,12 +491,17 @@ std::unique_ptr<Expr> Parser::parseAssignExpr() {
     if (!RHS)
       return nullptr;
 
-    // For now, we'll represent assignments as binary expressions
-    return std::make_unique<BinaryExpr>(OpLoc, BinaryExpr::BO_Eq, E.release(),
-                                        RHS.release());
+    // Check if LHS is a variable reference
+    if (auto *VR = llvm::dyn_cast<VarRefExpr>(LHS.get())) {
+      // Create an assignment expression (using binary expression with BO_Eq)
+      return std::make_unique<BinaryExpr>(OpLoc, BinaryExpr::BO_Eq, LHS.release(), RHS.release());
+    }
+
+    Diags.report(OpLoc, diag::err_expected, "lvalue", "expression");
+    return nullptr;
   }
 
-  return E;
+  return LHS;
 }
 
 // Parse equality expressions (==, !=)
@@ -485,7 +520,25 @@ std::unique_ptr<Expr> Parser::parseRelationalExpr() {
   if (!E)
     return nullptr;
 
-  // For now, we don't support relational operators yet
+  while (CurTok.is(tok::less) || CurTok.is(tok::greater) || CurTok.is(tok::equal)) {
+    BinaryExpr::BinaryOpKind Op;
+    if (CurTok.is(tok::less))
+      Op = BinaryExpr::BO_Lt;
+    else if (CurTok.is(tok::greater))
+      Op = BinaryExpr::BO_Gt;
+    else
+      Op = BinaryExpr::BO_Eq;
+
+    SMLoc OpLoc = CurTok.getLocation();
+    advance(); // consume the operator
+
+    auto RHS = parseAdditiveExpr();
+    if (!RHS)
+      return nullptr;
+
+    E = std::make_unique<BinaryExpr>(OpLoc, Op, E.release(), RHS.release());
+  }
+
   return E;
 }
 

@@ -26,6 +26,8 @@ PUNCTUATOR(plus,                "+")
 PUNCTUATOR(minus,               "-")
 PUNCTUATOR(star,                "*")
 PUNCTUATOR(equal,               "=")
+PUNCTUATOR(less,                "<")
+PUNCTUATOR(greater,             ">")
 
 KEYWORD(start                       , KEYALL)
 KEYWORD(int                         , KEYALL)
