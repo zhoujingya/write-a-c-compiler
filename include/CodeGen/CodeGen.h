@@ -29,6 +29,7 @@ private:
   // Helper methods for code generation
   llvm::Value *generateExpr(Expr *E);
   llvm::Value *generateIntegerLiteral(IntegerLiteral *IL);
+  llvm::Value *generateFloatLiteral(FloatLiteral *FL);
   llvm::Value *generateVarRefExpr(VarRefExpr *VR);
   llvm::Value *generateBinaryExpr(BinaryExpr *BE);
   llvm::Value *generateUnaryExpr(UnaryExpr *UE);

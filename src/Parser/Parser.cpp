@@ -129,7 +129,7 @@ std::unique_ptr<Decl> Parser::parseTopLevelDecl() {
   }
 
   // For now, we only handle function declarations and global variables
-  if (CurTok.is(tok::kw_int) || CurTok.is(tok::kw_void)) {
+  if (CurTok.is(tok::kw_int) || CurTok.is(tok::kw_void) || CurTok.is(tok::kw_float)) {
     StringRef Type = CurTok.getIdentifier();
     SMLoc TypeLoc = CurTok.getLocation();
     advance();
@@ -137,8 +137,8 @@ std::unique_ptr<Decl> Parser::parseTopLevelDecl() {
     // After a type specifier, we expect an identifier (variable or function name)
     if (!CurTok.is(tok::identifier)) {
       // If we see a constant, it's likely a malformed function declaration with a numeric name
-      if (CurTok.is(tok::constant)) {
-        StringRef ConstValue = CurTok.getConstantValue();
+      if (CurTok.is(tok::integer_cons)) {
+        StringRef ConstValue = CurTok.getIdentifier();
         Diags.report(CurTok.getLocation(), diag::err_invalid_function_name, ConstValue);
 
         // Skip the constant token
@@ -617,15 +617,10 @@ std::unique_ptr<Expr> Parser::parsePrimaryExpr() {
 
     // Otherwise, it's a variable reference
     return std::make_unique<VarRefExpr>(Loc, Name);
-  } else if (CurTok.is(tok::constant)) {
-    SMLoc Loc = CurTok.getLocation();
-    StringRef ValueStr = CurTok.getConstantValue();
-
-    // Parse the integer value
-    llvm::APInt Value(32, ValueStr.str(), 10);
-    advance();
-
-    return std::make_unique<IntegerLiteral>(Loc, llvm::APSInt(Value));
+  } else if (CurTok.is(tok::integer_cons)) {
+    return parseIntegerLiteral();
+  } else if (CurTok.is(tok::float_cons)) {
+    return parseFloatLiteral();
   } else if (CurTok.is(tok::open_paren)) {
     advance(); // consume '('
     auto E = parseExpr();
@@ -644,6 +639,33 @@ std::unique_ptr<Expr> Parser::parsePrimaryExpr() {
   Diags.report(CurTok.getLocation(), diag::err_expected, "expression",
                StringRef(CurTok.getName()));
   return nullptr;
+}
+
+// Parse integer literal
+std::unique_ptr<Expr> Parser::parseIntegerLiteral() {
+  SMLoc Loc = CurTok.getLocation();
+  StringRef ValueStr = CurTok.getIdentifier();
+
+  // Parse the integer value
+  llvm::APInt Value(32, ValueStr.str(), 10);
+  advance();
+
+  return std::make_unique<IntegerLiteral>(Loc, llvm::APSInt(Value));
+}
+
+// Parse float literal
+std::unique_ptr<Expr> Parser::parseFloatLiteral() {
+  SMLoc Loc = CurTok.getLocation();
+  StringRef ValueStr = CurTok.getIdentifier();
+
+  // Parse the float value - use standard C++ conversion to avoid LLVM API version issues
+  float FloatValue = std::stof(ValueStr.str());
+  llvm::outs() << "Float value: " << FloatValue << "\n";
+  llvm::APFloat Value(FloatValue);
+
+  advance();
+
+  return std::make_unique<FloatLiteral>(Loc, Value);
 }
 
 // Parse function call

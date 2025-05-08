@@ -126,6 +126,7 @@ void Lexer::number(Token &Result) {
   const char *End = CurPtr;
   bool IsHex = false;
   bool IsOctal = false;
+  bool IsFloat = false;
 
   // Check for hex (0x) or octal (0) prefix
   if (*End == '0') {
@@ -136,11 +137,25 @@ void Lexer::number(Token &Result) {
       // At least one hex digit required after 0x
       if (!charinfo::isHexDigit(*End)) {
         Diags.report(getLoc(End), diag::invalid_suffix_in_constant, *End);
-        formToken(Result, End, tok::constant);
+        formToken(Result, End, tok::integer_cons);
         return;
       }
     } else if (charinfo::isDigit(*End)) {
       IsOctal = true;
+    } else if (*End == '.') {
+      // This is a float like "0.123"
+      IsFloat = true;
+      ++End;
+    }
+  } else if (*End == '.') {
+    // This is a float like ".123"
+    IsFloat = true;
+    ++End;
+    // Must have at least one digit after the decimal point
+    if (!charinfo::isDigit(*End)) {
+      Diags.report(getLoc(End), diag::invalid_suffix_in_constant, *End);
+      formToken(Result, End, tok::unknown);
+      return;
     }
   }
 
@@ -149,10 +164,45 @@ void Lexer::number(Token &Result) {
     if (IsHex && charinfo::isHexDigit(*End)) {
       ++End;
     } else if ((IsOctal && *End >= '0' && *End <= '7') ||
-               (!IsHex && !IsOctal && charinfo::isDigit(*End))) {
+               (!IsHex && !IsOctal && !IsFloat && charinfo::isDigit(*End))) {
+      ++End;
+    } else if (IsFloat && charinfo::isDigit(*End)) {
       ++End;
     } else {
       break;
+    }
+  }
+
+  // Check for decimal point in non-float numbers
+  if (!IsFloat && !IsHex && !IsOctal && *End == '.') {
+    IsFloat = true;
+    ++End;
+    // Consume digits after decimal point
+    while (charinfo::isDigit(*End)) {
+      ++End;
+    }
+  }
+
+  // Check for exponent in float numbers (e.g., 1.23e+45)
+  if (IsFloat && (*End == 'e' || *End == 'E')) {
+    const char *ExpStart = End;
+    ++End;
+
+    // Optional sign
+    if (*End == '+' || *End == '-') {
+      ++End;
+    }
+
+    // Must have at least one digit in exponent
+    if (!charinfo::isDigit(*End)) {
+      Diags.report(getLoc(ExpStart), diag::invalid_suffix_in_constant, *ExpStart);
+      formToken(Result, ExpStart, tok::float_cons);
+      return;
+    }
+
+    // Consume exponent digits
+    while (charinfo::isDigit(*End)) {
+      ++End;
     }
   }
 
@@ -171,7 +221,8 @@ void Lexer::number(Token &Result) {
   }
 
   // Form the token
-  formToken(Result, End, tok::constant);
+  llvm::outs() << "IsFloat: " << IsFloat << "\n";
+  formToken(Result, End, IsFloat ? tok::float_cons : tok::integer_cons);
 }
 
 void Lexer::string(Token &Result) {

@@ -53,7 +53,8 @@ public:
   }
 
   StringRef getConstantValue() const {
-    assert(is(tok::constant) && "Cannot get value of non-constant token");
+    assert(isOneOf(tok::integer_cons, tok::float_cons) &&
+           "Cannot get value of non-constant token");
     return StringRef(Ptr, Length);
   }
 };

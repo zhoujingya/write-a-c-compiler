@@ -13,7 +13,8 @@
 TOK(unknown)                    // Not a token.
 TOK(eof)                        // End of file.
 TOK(identifier)                 // [a-zA-Z_]\w*\b
-TOK(constant)                   // [0-9]+\b
+TOK(integer_cons)               // [0-9]+\b
+TOK(float_cons)                 // ([0-9]*\.[0-9]+|[0-9]+\.?)[Ee][+-]?[0-9]+|[0-9]*\.[0-9]+|[0-9]+\.
 
 PUNCTUATOR(open_paren,          "(")
 PUNCTUATOR(close_paren,         ")")
@@ -31,6 +32,7 @@ PUNCTUATOR(greater,             ">")
 
 KEYWORD(start                       , KEYALL)
 KEYWORD(int                         , KEYALL)
+KEYWORD(float                       , KEYALL)
 KEYWORD(void                        , KEYALL)
 KEYWORD(return                      , KEYALL)
 KEYWORD(if                          , KEYALL)

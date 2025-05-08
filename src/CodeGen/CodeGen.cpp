@@ -39,12 +39,15 @@ void CodeGenerator::print(llvm::raw_ostream &OS) {
 }
 
 llvm::Type *CodeGenerator::getLLVMType(StringRef TypeName) {
-  if (TypeName == "int")
+  if (TypeName == "int") {
     return llvm::Type::getInt32Ty(*Context);
-  else if (TypeName == "void")
+  } else if (TypeName == "float") {
+    return llvm::Type::getFloatTy(*Context);
+  } else if (TypeName == "void") {
     return llvm::Type::getVoidTy(*Context);
+  }
 
-  // Default to int for unknown types
+  // Report unknown type and default to int
   Diags.report(SMLoc(), diag::unknown_type, TypeName);
   return llvm::Type::getInt32Ty(*Context);
 }
@@ -130,7 +133,10 @@ llvm::Value *CodeGenerator::generateVarDecl(VarDecl *VD) {
 
     // Initialize if there's an initializer
     if (VD->getInit()) {
-      if (auto *IL = llvm::dyn_cast<IntegerLiteral>(VD->getInit())) {
+      if (auto *FL = llvm::dyn_cast<FloatLiteral>(VD->getInit())) {
+        GV->setInitializer(
+            llvm::ConstantFP::get(VarType, FL->getValue().convertToFloat()));
+      } else if (auto *IL = llvm::dyn_cast<IntegerLiteral>(VD->getInit())) {
         GV->setInitializer(
             llvm::ConstantInt::get(VarType, IL->getValue().getZExtValue()));
       }
@@ -274,6 +280,8 @@ llvm::Value *CodeGenerator::generateExpr(Expr *E) {
   switch (E->getKind()) {
   case Expr::EK_IntegerLiteral:
     return generateIntegerLiteral(llvm::cast<IntegerLiteral>(E));
+  case Expr::EK_FloatLiteral:
+    return generateFloatLiteral(llvm::cast<FloatLiteral>(E));
   case Expr::EK_VarRef:
     return generateVarRefExpr(llvm::cast<VarRefExpr>(E));
   case Expr::EK_Binary:
@@ -290,6 +298,11 @@ llvm::Value *CodeGenerator::generateExpr(Expr *E) {
 llvm::Value *CodeGenerator::generateIntegerLiteral(IntegerLiteral *IL) {
   return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*Context),
                                 IL->getValue().getZExtValue());
+}
+
+llvm::Value *CodeGenerator::generateFloatLiteral(FloatLiteral *FL) {
+  return llvm::ConstantFP::get(llvm::Type::getFloatTy(*Context),
+                               FL->getValue().convertToFloat());
 }
 
 llvm::Value *CodeGenerator::generateVarRefExpr(VarRefExpr *VR) {
@@ -345,26 +358,51 @@ llvm::Value *CodeGenerator::generateBinaryExpr(BinaryExpr *BE) {
   if (!L || !R)
     return nullptr;
 
+  // Check if we're dealing with float operands
+  bool IsFloat = L->getType()->isFloatTy() || R->getType()->isFloatTy();
+
+  // If mixed types (int and float), convert int to float
+  if (IsFloat) {
+    if (L->getType()->isIntegerTy()) {
+      L = Builder->CreateSIToFP(L, llvm::Type::getFloatTy(*Context));
+    }
+    if (R->getType()->isIntegerTy()) {
+      R = Builder->CreateSIToFP(R, llvm::Type::getFloatTy(*Context));
+    }
+  }
+
   switch (BE->getOpcode()) {
   case BinaryExpr::BO_Add:
-    return Builder->CreateAdd(L, R);
+    return IsFloat ? Builder->CreateFAdd(L, R) : Builder->CreateAdd(L, R);
   case BinaryExpr::BO_Sub:
-    return Builder->CreateSub(L, R);
+    return IsFloat ? Builder->CreateFSub(L, R) : Builder->CreateSub(L, R);
   case BinaryExpr::BO_Mul:
-    return Builder->CreateMul(L, R);
+    return IsFloat ? Builder->CreateFMul(L, R) : Builder->CreateMul(L, R);
   case BinaryExpr::BO_Div:
-    return Builder->CreateSDiv(L, R);
+    return IsFloat ? Builder->CreateFDiv(L, R) : Builder->CreateSDiv(L, R);
   case BinaryExpr::BO_Lt:
-    L = Builder->CreateICmpSLT(L, R);
+    if (IsFloat) {
+      L = Builder->CreateFCmpOLT(L, R);
+    } else {
+      L = Builder->CreateICmpSLT(L, R);
+    }
     // Convert i1 to i32
     return Builder->CreateZExt(L, llvm::Type::getInt32Ty(*Context));
   case BinaryExpr::BO_Gt:
-    L = Builder->CreateICmpSGT(L, R);
+    if (IsFloat) {
+      L = Builder->CreateFCmpOGT(L, R);
+    } else {
+      L = Builder->CreateICmpSGT(L, R);
+    }
     // Convert i1 to i32
     return Builder->CreateZExt(L, llvm::Type::getInt32Ty(*Context));
   case BinaryExpr::BO_Eq:
     // This should never happen, as we handle assignments above
-    L = Builder->CreateICmpEQ(L, R);
+    if (IsFloat) {
+      L = Builder->CreateFCmpOEQ(L, R);
+    } else {
+      L = Builder->CreateICmpEQ(L, R);
+    }
     // Convert i1 to i32
     return Builder->CreateZExt(L, llvm::Type::getInt32Ty(*Context));
   }
@@ -377,14 +415,25 @@ llvm::Value *CodeGenerator::generateUnaryExpr(UnaryExpr *UE) {
   if (!SubV)
     return nullptr;
 
+  // Check if we're dealing with a float operand
+  bool IsFloat = SubV->getType()->isFloatTy();
+
   switch (UE->getOpcode()) {
   case UnaryExpr::UO_Minus:
-    return Builder->CreateNeg(SubV);
+    return IsFloat ? Builder->CreateFNeg(SubV) : Builder->CreateNeg(SubV);
   case UnaryExpr::UO_Not:
-    // First compare with 0 to get i1
-    SubV = Builder->CreateICmpEQ(
-        SubV, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*Context), 0),
-        "");
+    // For float operands, compare with 0.0
+    if (IsFloat) {
+      // First compare with 0.0 to get i1
+      SubV = Builder->CreateFCmpOEQ(
+          SubV, llvm::ConstantFP::get(llvm::Type::getFloatTy(*Context), 0.0),
+          "");
+    } else {
+      // First compare with 0 to get i1
+      SubV = Builder->CreateICmpEQ(
+          SubV, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*Context), 0),
+          "");
+    }
     // Convert i1 to i32
     return Builder->CreateZExt(SubV, llvm::Type::getInt32Ty(*Context));
   }

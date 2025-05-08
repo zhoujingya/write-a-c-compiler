@@ -42,6 +42,8 @@ private:
   std::unique_ptr<Expr> parseMultiplicativeExpr();
   std::unique_ptr<Expr> parseUnaryExpr();
   std::unique_ptr<Expr> parsePrimaryExpr();
+  std::unique_ptr<Expr> parseIntegerLiteral();
+  std::unique_ptr<Expr> parseFloatLiteral();
   std::unique_ptr<CallExpr> parseCallExpr(StringRef FuncName, SMLoc Loc);
 
   // Helper for detecting keyword case errors

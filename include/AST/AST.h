@@ -3,6 +3,7 @@
 
 #include "Support/TokenKinds.h"
 #include "llvm/ADT/APSInt.h"
+#include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/SMLoc.h"
 #include <string>
@@ -94,7 +95,7 @@ public:
 // Base class for all expressions
 class Expr {
 public:
-  enum ExprKind { EK_Binary, EK_Unary, EK_IntegerLiteral, EK_VarRef, EK_Call };
+  enum ExprKind { EK_Binary, EK_Unary, EK_IntegerLiteral, EK_FloatLiteral, EK_VarRef, EK_Call };
 
 private:
   const ExprKind Kind;
@@ -122,6 +123,21 @@ public:
 
   static bool classof(const Expr *E) {
     return E->getKind() == EK_IntegerLiteral;
+  }
+};
+
+// Float literal expression
+class FloatLiteral : public Expr {
+  llvm::APFloat Value;
+
+public:
+  FloatLiteral(SMLoc Loc, const llvm::APFloat &Value)
+      : Expr(EK_FloatLiteral, Loc), Value(Value) {}
+
+  const llvm::APFloat &getValue() const { return Value; }
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == EK_FloatLiteral;
   }
 };
 
