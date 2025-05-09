@@ -25,42 +25,13 @@ If above cmake command reports error, you just need to fix, mostly it may be rel
 Just follow [this repository](https://github.com/nlsandler/writing-a-c-compiler-tests/blob/main/README.md) and its PDF
 
 
-## Chapter1 - lexer
-
-In [lexer](include/Lexer/Lexer.h), I define a `LexerDriver` class just to test lexer
-
-`./test_compiler [this repo path]/build/bin/tinycc --chapter 1 --stage lex`
-
-  ```
-➜  writing-a-c-compiler-tests git:(main) ✗ ./test_compiler ~/codes/Tiny-c-compiler/build/bin/tinycc --chapter 1 --stage lex
-----------------------------------------------------------------------
-Ran 24 tests in 0.131s
-
-OK
-  ```
-
-## Chapter1 - parser
-
-`./test_compiler [this repo path]/build/bin/tinycc --chapter 1 --stage parse`
-
-  ```
-➜  writing-a-c-compiler-tests git:(main) ✗ ./test_compiler ~/codes/Tiny-c-compiler/build/bin/tinycc --chapter 1 --stage parse
-----------------------------------------------------------------------
-Ran 24 tests in 0.136s
-
-OK
-  ```
-
-## Chapter1 - codegen
-
-`./test_compiler [this repo path]/build/bin/tinycc --chapter 1 --stage codegen`
-
-> NOTE: not the same as book, just add an --codegen commandline option
+## Chapter1 - lexer/parser/codegen
 
 ```
-➜  writing-a-c-compiler-tests git:(main) ✗ ./test_compiler ~/codes/Tiny-c-compiler/build/bin/tinycc --chapter 1 --stage codegen
-----------------------------------------------------------------------
-Ran 24 tests in 0.176s
+./test_compiler [this repo path]/build/bin/tinycc --chapter 1 --stage lex/parse/codegen`
 
-OK
 ```
+
+
+
+

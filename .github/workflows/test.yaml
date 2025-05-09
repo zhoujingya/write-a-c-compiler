@@ -36,23 +36,13 @@ jobs:
         cmake -B build -S . -DENABLE_TESTING=ON
         cmake --build build
 
-    - name: Start test lexer
+    - name: Start chapter1 test lexer/parser/codegen
       run: |
         arch -x86_64 zsh
         cd ${{github.workspace}}/writing-a-c-compiler-tests
-        ./test_compiler ${{github.workspace}}/write-a-c-compiler/build/bin/tinycc --chapter 1 --stage lex
-
-    - name: Start test parser
-      run: |
-        arch -x86_64 zsh
-        cd ${{github.workspace}}/writing-a-c-compiler-tests
-        ./test_compiler ${{github.workspace}}/write-a-c-compiler/build/bin/tinycc --chapter 1 --stage parse
-
-    - name: Start test codegen
-      run: |
-        arch -x86_64 zsh
-        cd ${{github.workspace}}/writing-a-c-compiler-tests
-        ./test_compiler ${{github.workspace}}/write-a-c-compiler/build/bin/tinycc --chapter 1 --stage codegen
+        for stage in lex parse codegen; do
+          ./test_compiler ${{github.workspace}}/write-a-c-compiler/build/bin/tinycc --chapter 1 --stage $stage
+        done
 
     - name: Start lit test
       run: |
